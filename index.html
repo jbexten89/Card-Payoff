@@ -62,11 +62,12 @@ button{font:inherit;font-size:.85rem;font-weight:600;border-radius:6px;padding:8
 button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .cards{display:grid;gap:8px;margin-top:18px}
 /* Cards wrap onto new rows so "+ Add card" is always on screen */
-.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-@media (max-width:420px){.chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.chip{display:grid;gap:1px;text-align:left;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0}
-.chip .n{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip .b{font-family:var(--mono);font-size:.76rem;color:var(--muted);font-weight:400}
+.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.chip{display:grid;gap:1px;text-align:left;padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0}
+.chip{align-content:space-between}
+.chip .n{font-size:.78rem;font-weight:600;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow-wrap:anywhere}
+.chip .b{font-family:var(--mono);font-size:.7rem;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.add{text-align:center;justify-items:center;font-size:.8rem;line-height:1.15}
 .chip[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .chip[aria-selected="true"] .b{color:var(--accent)}
 .chip.add{color:var(--accent);border-style:dashed;align-content:center;font-weight:600}
@@ -499,7 +500,7 @@ function renderChips(){
   const html=store.cards.map((c,i)=>{
     const bal=parseFloat(c.v.balance)||0;
     return `<button type="button" class="chip" role="tab" data-id="${c.id}" aria-selected="${c.id===store.current}"><span class="n"></span><span class="b">${bal?money0(bal):'No balance'}</span></button>`;
-  }).join('')+`<button type="button" class="chip add" id="addCard">+ Add card</button>`;
+  }).join('')+`<button type="button" class="chip add" id="addCard" aria-label="Add card"><span style="font-size:1.1rem;line-height:1">+</span><span>Add card</span></button>`;
   $('chips').innerHTML=html;
   [...$('chips').querySelectorAll('.chip[data-id]')].forEach((el,i)=>{ el.querySelector('.n').textContent=cardName(store.cards[i],i); });
 }
