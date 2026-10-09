@@ -58,6 +58,20 @@ label{align-content:start}
 .seg label:has(input:checked){background:var(--accent);color:var(--on-accent);font-weight:600}
 button{font:inherit;font-size:.85rem;font-weight:600;border-radius:6px;padding:8px 12px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.cards{display:grid;gap:8px;margin-top:18px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;display:grid;gap:1px;text-align:left;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0;max-width:200px}
+.chip .n{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .b{font-family:var(--mono);font-size:.76rem;color:var(--muted);font-weight:400}
+.chip[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.chip[aria-selected="true"] .b{color:var(--accent)}
+.chip.add{color:var(--accent);border-style:dashed;align-content:center;font-weight:600}
+.allcards{margin:0;font-size:.82rem;color:var(--muted)}
+.allcards b{color:var(--ink);font-weight:600}
+.namerow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+button.ghost{color:var(--muted);height:42px}
+button.ghost.armed{background:var(--warn);border-color:var(--warn);color:var(--on-warn)}
 .lump{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
 .lump button{padding:8px 10px;color:var(--muted)}
 .hint{font-size:.8rem;color:var(--muted);margin:0}
@@ -114,20 +128,29 @@ body{margin:0;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none
 <body>
 <div class="wrap">
 <header>
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h1>Card Payoff Planner</h1><button type="button" id="resetBtn">Reset</button></div>
+  <h1>Card Payoff Planner</h1>
   <p>Interest is calculated the way card issuers do it: average daily balance with daily compounding, statement by statement. Add extra payments to see how much sooner you're out.</p>
 </header>
+
+<nav class="cards" aria-label="Your cards">
+  <div class="chips" id="chips" role="tablist"></div>
+  <p class="allcards" id="allCards"></p>
+</nav>
 
 <div class="grid">
 <form class="panel" id="f" autocomplete="off">
   <fieldset>
     <legend>Card</legend>
+    <div class="namerow">
+      <label>Card name<input id="cardName" type="text" maxlength="30" placeholder="e.g. Chase Freedom" style="font-family:var(--body)"></label>
+      <button type="button" id="delCard" class="ghost">Delete card</button>
+    </div>
     <div class="row">
       <label>Balance ($)<input id="balance" type="number" step="0.01" min="0" value="6500"></label>
       <label>APR (%)<input id="apr" type="number" step="0.01" min="0" value="24.99"></label>
     </div>
     <div class="row">
-      <label>Statement closes on day<input id="closeDay" type="number" min="1" max="31" value="15"></label>
+      <label>Closes on day<input id="closeDay" type="number" min="1" max="31" value="15"></label>
       <label>Due (days after close)<input id="dueOffset" type="number" min="1" max="31" value="25"></label>
     </div>
     <div class="row">
@@ -329,7 +352,11 @@ let lastPlan=null;
 function run(){
   const o=readOpts();
   $('fixedWrap').hidden = o.mode==='min';
-  if(o.balance<=0){ $('alert').hidden=false; $('alert').textContent='Enter a balance above $0.'; return; }
+  if(o.balance<=0){
+    $('alert').hidden=false; $('alert').textContent='Enter this card\'s balance to see its payoff plan.';
+    ['tPayoff','tMonths','tInt','tPaid'].forEach(id=>$(id).textContent='—');
+    $('cmpBody').innerHTML=''; $('schedBody').innerHTML=''; $('chart').innerHTML=''; lastPlan=null; return;
+  }
   const plan=simulate(o);
   const base=simulate({...o, mode:'min', extraMonthly:0, lumps:[], annualAmount:0});
   lastPlan=plan;
@@ -418,29 +445,103 @@ $('runCheck').onclick=()=>{
 };
 
 
-// ---- Remember inputs on this phone ----
-const KEY='cardPayoff.v1';
-function saveState(){
-  try{
-    const v={};
-    document.querySelectorAll('#f input, #f select').forEach(el=>{
-      if(!el.id || el.closest('.lump')) return;
-      v[el.id] = el.type==='radio' ? el.checked : el.value;
-    });
-    const lumps=[...document.querySelectorAll('.lump')].map(r=>({date:r.querySelector('input[type=date]').value, amount:r.querySelector('input[type=number]').value}));
-    localStorage.setItem(KEY, JSON.stringify({v,lumps}));
-  }catch(e){}
+// ---- Saved cards (kept on this phone) ----
+// Storage shape: { current: id, cards: [{ id, v: {inputId: value}, lumps: [{date, amount}] }] }
+const KEY='cardPayoff.cards.v2', OLD_KEY='cardPayoff.v1';
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function readForm(){
+  const v={};
+  document.querySelectorAll('#f input, #f select').forEach(el=>{
+    if(!el.id || el.closest('.lump')) return;
+    v[el.id] = el.type==='radio' ? el.checked : el.value;
+  });
+  const lumps=[...document.querySelectorAll('.lump')].map(r=>({date:r.querySelector('input[type=date]').value, amount:r.querySelector('input[type=number]').value}));
+  return {v,lumps};
 }
-function loadState(){
-  try{
-    const st=JSON.parse(localStorage.getItem(KEY)||'null'); if(!st) return;
-    for(const [id,val] of Object.entries(st.v||{})){ const el=$(id); if(!el) continue; if(el.type==='radio') el.checked=val; else el.value=val; }
-    $('lumps').innerHTML=''; (st.lumps||[]).forEach(l=>addLump(l.date,l.amount));
-  }catch(e){}
+function writeForm(st){
+  for(const [id,val] of Object.entries(st.v||{})){ const el=$(id); if(!el) continue; if(el.type==='radio') el.checked=val; else el.value=val; }
+  $('lumps').innerHTML=''; (st.lumps||[]).forEach(l=>addLump(l.date,l.amount));
 }
-loadState();
-const _run=run; run=function(){ _run(); saveState(); };
-$('resetBtn').onclick=()=>{ try{localStorage.removeItem(KEY);}catch(e){} location.reload(); };
+const EXAMPLE=readForm();                     // the sample card the page opens with
+EXAMPLE.v.cardName='Example card';
+function blankCard(n){                          // a new card keeps the min-payment rule and dates, clears the money
+  const c=JSON.parse(JSON.stringify(EXAMPLE));
+  Object.assign(c.v,{cardName:`Card ${n}`, balance:'', apr:'', fixed:'', extraMonthly:'0', annualAmount:'0', annualMonth:'0', purchases:'0', start:todayIso});
+  c.lumps=[]; c.id=uid(); return c;
+}
+let store;
+function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+function loadStore(){
+  try{ store=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ store=null; }
+  if(!store || !Array.isArray(store.cards) || !store.cards.length){
+    let first={...JSON.parse(JSON.stringify(EXAMPLE)), id:uid()};
+    try{ const old=JSON.parse(localStorage.getItem(OLD_KEY)||'null');   // bring over numbers saved by the one-card version
+      if(old){ first={v:{...old.v, cardName:'My card'}, lumps:old.lumps||[], id:uid()}; } }catch(e){}
+    store={current:first.id, cards:[first]};
+  }
+  if(!store.cards.some(c=>c.id===store.current)) store.current=store.cards[0].id;
+}
+const cur=()=>store.cards.find(c=>c.id===store.current);
+const cardName=(c,i)=>(c.v.cardName||'').trim()||`Card ${i+1}`;
+
+// Options for any saved card, used for the all-cards line
+function optsFor(c){
+  const v=c.v, f=k=>{const x=parseFloat(v[k]);return isFinite(x)?x:0;};
+  return {balance:f('balance'),apr:f('apr'),closeDay:Math.min(31,Math.max(1,f('closeDay')||1)),dueOffset:Math.max(1,f('dueOffset')),
+    payOffset:Math.max(0,f('payOffset')),start:v.start||todayIso,mode:v.modeMin?'min':'fixed',fixed:f('fixed'),minFloor:f('minFloor'),
+    minPct:f('minPct'),extraMonthly:f('extraMonthly'),lumps:(c.lumps||[]).map(l=>({date:l.date,amount:parseFloat(l.amount)||0})),
+    annualMonth:+v.annualMonth||0,annualAmount:f('annualAmount'),purchases:f('purchases')};
+}
+function renderChips(){
+  const html=store.cards.map((c,i)=>{
+    const bal=parseFloat(c.v.balance)||0;
+    return `<button type="button" class="chip" role="tab" data-id="${c.id}" aria-selected="${c.id===store.current}"><span class="n"></span><span class="b">${bal?money0(bal):'No balance'}</span></button>`;
+  }).join('')+`<button type="button" class="chip add" id="addCard">+ Add card</button>`;
+  $('chips').innerHTML=html;
+  [...$('chips').querySelectorAll('.chip[data-id]')].forEach((el,i)=>{ el.querySelector('.n').textContent=cardName(store.cards[i],i); });
+}
+let summaryTimer=null;
+function renderSummary(){
+  clearTimeout(summaryTimer);
+  summaryTimer=setTimeout(()=>{
+    const live=store.cards.filter(c=>(parseFloat(c.v.balance)||0)>0);
+    if(store.cards.length<2 || !live.length){ $('allCards').textContent=''; return; }
+    let total=0, interest=0, last=null, never=false;
+    for(const c of live){ const o=optsFor(c); total+=o.balance; const r=simulate(o); interest+=r.totalInterest;
+      if(r.never) never=true; else if(!last || r.payoffDate>last) last=r.payoffDate; }
+    $('allCards').innerHTML=`All ${store.cards.length} cards: <b>${money0(total)}</b> owed, <b>${money0(interest)}</b> interest, `+
+      (never?'<b>one card never pays off</b> at its current payment':`debt-free by <b>${fmtDate(last)}</b>`);
+  },250);
+}
+function switchTo(id){
+  Object.assign(cur(), readForm());
+  store.current=id; writeForm(cur()); disarmDelete(); _run(); persist(); renderChips(); renderSummary();
+  const sel=$('chips').querySelector('[aria-selected="true"]'); if(sel) sel.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+$('chips').addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b) return;
+  if(b.id==='addCard'){
+    Object.assign(cur(), readForm());
+    const c=blankCard(store.cards.length+1); store.cards.push(c); switchTo(c.id); $('balance').focus(); return;
+  }
+  if(b.dataset.id!==store.current) switchTo(b.dataset.id);
+});
+// Delete asks for a second tap instead of a pop-up
+let armTimer=null;
+function disarmDelete(){ clearTimeout(armTimer); $('delCard').classList.remove('armed'); $('delCard').textContent='Delete card'; }
+$('delCard').onclick=()=>{
+  const btn=$('delCard');
+  if(!btn.classList.contains('armed')){ btn.classList.add('armed'); btn.textContent='Tap to confirm'; armTimer=setTimeout(disarmDelete,4000); return; }
+  disarmDelete();
+  const i=store.cards.findIndex(c=>c.id===store.current);
+  store.cards.splice(i,1);
+  if(!store.cards.length) store.cards.push(blankCard(1));
+  store.current=store.cards[Math.max(0,i-1)].id; writeForm(cur()); _run(); persist(); renderChips(); renderSummary();
+};
+
+loadStore(); writeForm(cur());
+const _run=run;
+run=function(){ _run(); Object.assign(cur(), readForm()); persist(); renderChips(); renderSummary(); };
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 
 $('f').addEventListener('input',()=>run());
