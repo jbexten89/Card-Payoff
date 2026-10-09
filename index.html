@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1419">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -29,6 +29,8 @@
 *{box-sizing:border-box}
 html,body{overflow-x:clip;max-width:100%}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* No double-tap zoom anywhere */
+html,body,button,input,select,label,.chip{touch-action:manipulation}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
 .wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:24px 48px}
 header h1{font-family:var(--display);font-size:clamp(1.6rem,4vw,2.3rem);margin:0;letter-spacing:-.01em;text-wrap:balance}
@@ -542,6 +544,9 @@ $('delCard').onclick=()=>{
 loadStore(); writeForm(cur());
 const _run=run;
 run=function(){ _run(); Object.assign(cur(), readForm()); persist(); renderChips(); renderSummary(); };
+// Block pinch zoom (iOS Safari ignores user-scalable=no, so stop the gesture itself)
+['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{ if(e.touches.length>1) e.preventDefault(); },{passive:false});
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 
 $('f').addEventListener('input',()=>run());
