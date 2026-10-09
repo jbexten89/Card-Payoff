@@ -59,9 +59,10 @@ label{align-content:start}
 button{font:inherit;font-size:.85rem;font-weight:600;border-radius:6px;padding:8px 12px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .cards{display:grid;gap:8px;margin-top:18px}
-.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.chips::-webkit-scrollbar{display:none}
-.chip{flex:0 0 auto;display:grid;gap:1px;text-align:left;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0;max-width:200px}
+/* Cards wrap onto new rows so "+ Add card" is always on screen */
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+@media (max-width:420px){.chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chip{display:grid;gap:1px;text-align:left;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0}
 .chip .n{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip .b{font-family:var(--mono);font-size:.76rem;color:var(--muted);font-weight:400}
 .chip[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
@@ -516,7 +517,6 @@ function renderSummary(){
 function switchTo(id){
   Object.assign(cur(), readForm());
   store.current=id; writeForm(cur()); disarmDelete(); _run(); persist(); renderChips(); renderSummary();
-  const sel=$('chips').querySelector('[aria-selected="true"]'); if(sel) sel.scrollIntoView({block:'nearest',inline:'nearest'});
 }
 $('chips').addEventListener('click',e=>{
   const b=e.target.closest('.chip'); if(!b) return;
