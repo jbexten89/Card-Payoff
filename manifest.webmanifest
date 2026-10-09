@@ -4,8 +4,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f5f6f4",
-  "theme_color": "#1f6b52",
+  "background_color": "#0f1419",
+  "theme_color": "#0f1419",
   "description": "Credit card payoff calculator using average daily balance.",
   "icons": [
     {

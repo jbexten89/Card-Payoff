@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1f6b52">
+<meta name="theme-color" content="#0f1419">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,18 +17,15 @@
 <style>
 /* Layout: inputs column beside a results column; stacks to one column on phones */
 :root{
-  --bg:#f5f6f4; --surface:#ffffff; --ink:#1b2321; --muted:#5d6966; --line:#dde2df;
-  --accent:#1f6b52; --accent-soft:#e2efe9; --interest:#b4532a; --interest-soft:#f6e6dd; --warn:#a33a2a;
+  /* Dark-only palette matched to the Retirement planner: ink-navy ground, teal for your plan, amber for interest */
+  --bg:#0f1419; --deep:#0a0e12; --surface:#182028; --ink:#f2f5f8; --muted:#94a3b3; --line:#2a3540;
+  --accent:#3fbf95; --accent-soft:#153328; --on-accent:#0a0e12;
+  --interest:#e0a050; --interest-soft:#3a2b16; --warn:#e0a050; --on-warn:#fff8ef;
   --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --body:"Instrument Sans", "Segoe UI", system-ui, sans-serif;
   --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#121715; --surface:#1a201e; --ink:#e7ece9; --muted:#9aa7a2; --line:#2c3532;
-  --accent:#5cc49c; --accent-soft:#1d3229; --interest:#e58a5f; --interest-soft:#3a2419; --warn:#ef7f6c; color-scheme:dark } }
-:root[data-theme="dark"]{
-  --bg:#121715; --surface:#1a201e; --ink:#e7ece9; --muted:#9aa7a2; --line:#2c3532;
-  --accent:#5cc49c; --accent-soft:#1d3229; --interest:#e58a5f; --interest-soft:#3a2419; --warn:#ef7f6c; color-scheme:dark }
 *{box-sizing:border-box}
 html,body{overflow-x:clip;max-width:100%}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -38,7 +35,7 @@ header h1{font-family:var(--display);font-size:clamp(1.6rem,4vw,2.3rem);margin:0
 header p{color:var(--muted);margin:.3rem 0 0;max-width:62ch}
 .grid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:24px;margin-top:24px;align-items:start}
 @media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.panel{background:var(--deep);border:1px solid var(--line);border-radius:10px;padding:18px}
 fieldset{border:0;margin:0;padding:0;display:grid;gap:12px}
 fieldset+fieldset{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
 legend{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600;padding:0;margin-bottom:10px}
@@ -58,20 +55,20 @@ label{align-content:start}
 .row{align-items:start}
 @media (max-width:620px){ th,td{padding:8px 8px} td{font-size:.8rem} .cmp th,.cmp td{padding:10px 6px;font-size:.8rem} .cmp th{font-size:.66rem;letter-spacing:.04em} .cmp td:first-child,.cmp th:first-child{padding-left:12px} .cmp td:last-child,.cmp th:last-child{padding-right:12px} }
 .cmp table{table-layout:auto}
-.seg label:has(input:checked){background:var(--accent);color:var(--surface)}
+.seg label:has(input:checked){background:var(--accent);color:var(--on-accent);font-weight:600}
 button{font:inherit;font-size:.85rem;font-weight:600;border-radius:6px;padding:8px 12px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
-button.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .lump{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
 .lump button{padding:8px 10px;color:var(--muted)}
 .hint{font-size:.8rem;color:var(--muted);margin:0}
 .results{display:grid;gap:20px;min-width:0}
-.alert{border-left:4px solid var(--warn);background:var(--interest-soft);padding:12px 14px;border-radius:6px;font-weight:500}
+.alert{background:var(--warn);color:var(--on-warn);padding:14px 16px;border-radius:10px;font-weight:600}
 .tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 @media (max-width:620px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
 .tile .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
 .tile .v{font-family:var(--display);font-size:1.45rem;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px;overflow-wrap:anywhere}
-.tile.hero{background:var(--accent-soft);border-color:transparent}
+.tile.hero{background:var(--deep);border-color:var(--line)}
 .tile.hero .v{color:var(--accent)}
 .tile.int .v{color:var(--interest)}
 .cmp{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
@@ -372,7 +369,7 @@ function run(){
 }
 
 function drawChart(plan,base){
-  const W=760,H=280,L=64,R=14,T=12,B=30;
+  const W=760,H=280,L=96,R=14,T=12,B=30;
   const all=[...plan.series,...base.series];
   const x0=plan.start, x1=Math.max(...all.map(p=>p.day));
   const yMax=Math.max(...all.map(p=>p.bal))*1.05||1;
@@ -389,7 +386,8 @@ function drawChart(plan,base){
   const end=plan.series[plan.series.length-1];
   $('chart').innerHTML=`<div><svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:100%;height:auto" role="img" aria-label="Balance over time for your plan and minimum payments">
     ${g}<line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)" fill="none"/>
-    <path d="${area(plan.series)}" fill="var(--accent)" fill-opacity=".12" stroke="none"/>
+    <path d="${area(base.series)}" fill="var(--interest)" fill-opacity=".14" stroke="none"/>
+    <path d="${area(plan.series)}" fill="var(--accent)" fill-opacity=".22" stroke="none"/>
     <path d="${path(base.series)}" fill="none" stroke="var(--interest)" stroke-width="2"/>
     <path d="${path(plan.series)}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
     <circle cx="${X(end.day)}" cy="${Y(end.bal)}" r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>
